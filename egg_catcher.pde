@@ -1,6 +1,5 @@
 Egg[] eggs;
 int numEggs = 10;
-
 Basket basket;
 
 void setup() {
@@ -8,13 +7,17 @@ void setup() {
   basket = new Basket();
   eggs = new Egg[numEggs];
   for (int i = 0; i < numEggs; i++) {
-    eggs[i] = new Egg();
+    if (random(1) < 0.3) { //chance of bad egg created is 1/3
+      eggs[i] = new BadEgg();
+    } else {
+      eggs[i] = new GoodEgg();
+    }
   }
 }
 
 void draw() {
   background(200, 220, 255);
-
+  
   basket.display();
   basket.move();
 
@@ -63,7 +66,7 @@ class Basket {
 }
 
 // CLASS: EGG
-class Egg {
+abstract class Egg {
   float x, y;
   float speed = 3;
 
@@ -80,12 +83,25 @@ class Egg {
     y += speed;
   }
 
-  void display() {
-    fill(255, 255, 180);
-    ellipse(x, y, 30, 40);
-  }
+  abstract void display();
 
   boolean isCaught(Basket b) {
     return y > height - b.h && abs(x - b.x) < b.w / 2;
+  }
+}
+
+// SUBCLASS GoodEgg
+class GoodEgg extends Egg {
+  void display () {
+    fill(255, 255, 180);
+    ellipse(x, y, 30, 40);
+  }
+}
+
+// SUBCLASS Bad Egg
+class BadEgg extends Egg {
+  void display () {
+    fill(200, 50, 50);
+    ellipse(x, y, 30, 40);
   }
 }
