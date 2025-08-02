@@ -1,13 +1,20 @@
 Egg[] eggs;
 int numEggs = 10;
 Basket basket;
+boolean useMouseControl = false; // Toggle mouse/keyboard control
+int score = 0;
+int lives = 100;
+boolean gameOver = false;
+
+PImage bgImg; // Background image
 
 void setup() {
   size(400, 600);
+  bgImg = loadImage("background.jpg");
   basket = new Basket();
   eggs = new Egg[numEggs];
   for (int i = 0; i < numEggs; i++) {
-    if (random(1) < 0.3) { //chance of bad egg created is 1/3
+    if (random(1) < 0.3) {
       eggs[i] = new BadEgg();
     } else {
       eggs[i] = new GoodEgg();
@@ -16,30 +23,111 @@ void setup() {
 }
 
 void draw() {
-  background(200, 220, 255);
-  
+  if (bgImg != null) {
+    image(bgImg, 0, 0, width, height); // Draw background image
+  } else {
+    background(200, 220, 255); // Fallback if image missing
+  }
+
   basket.display();
-  basket.move();
 
-  for (Egg egg : eggs) {
-    egg.update();
-    egg.display();
-
-    if (egg.isCaught(basket)) {
-      egg.reset();
-    } else if (egg.y > height) {
-      egg.reset();
+  if (!gameOver) {
+    if (useMouseControl) {
+      basket.moveTo(mouseX);
+    } else {
+      basket.move();
     }
+
+    for (Egg egg : eggs) {
+      egg.update();
+      egg.display();
+
+      if (egg.isCaught(basket)) {
+        if (egg instanceof GoodEgg) {
+          score += 10;
+        } else if (egg instanceof BadEgg) {
+          lives--;
+          if (lives <= 0) {
+            gameOver = true;
+          }
+        }
+        egg.reset();
+      } else if (egg.y > height) {
+        // Missed egg
+        if (egg instanceof GoodEgg) {
+          lives--;
+          if (lives <= 0) {
+            gameOver = true;
+          }
+        }
+        egg.reset();
+      }
+    }
+  }
+
+  // HUD
+  fill(255);
+  textAlign(LEFT, TOP);
+  textSize(14);
+  text("Score: " + score, 10, 10);
+  text("Lives: " + lives, 10, 30);
+  text("Controls: Arrow keys or press 'M' for mouse control\nClick or Spacebar to reset eggs", 10, 50);
+
+  if (gameOver) {
+    fill(255, 0, 0);
+    textAlign(CENTER, CENTER);
+    textSize(40);
+    text("GAME OVER", width / 2, height / 2 - 30);
+    textSize(20);
+    text("Final Score: " + score, width / 2, height / 2 + 10);
+    text("Press R to Restart", width / 2, height / 2 + 40);
+    textSize(12);
   }
 }
 
 void keyPressed() {
-  if (keyCode == LEFT) basket.dir = -1;
-  if (keyCode == RIGHT) basket.dir = 1;
+  if (!useMouseControl && !gameOver) {
+    if (keyCode == LEFT) basket.dir = -1;
+    if (keyCode == RIGHT) basket.dir = 1;
+  }
+  if (key == 'm' || key == 'M') useMouseControl = !useMouseControl;
+  if (key == ' ') resetAllEggs();
+  if (key == 'r' || key == 'R') restartGame();
 }
 
 void keyReleased() {
-  if (keyCode == LEFT || keyCode == RIGHT) basket.dir = 0;
+  if (!useMouseControl && !gameOver) {
+    if (keyCode == LEFT || keyCode == RIGHT) basket.dir = 0;
+  }
+}
+
+void mouseMoved() {
+  if (useMouseControl && !gameOver) {
+    basket.moveTo(mouseX);
+  }
+}
+
+void mouseDragged() {
+  if (useMouseControl && !gameOver) {
+    basket.moveTo(mouseX);
+  }
+}
+
+void mouseClicked() {
+  if (!gameOver) resetAllEggs();
+}
+
+void resetAllEggs() {
+  for (Egg egg : eggs) {
+    egg.reset();
+  }
+}
+
+void restartGame() {
+  score = 0;
+  lives = 100;
+  gameOver = false;
+  resetAllEggs();
 }
 
 // CLASS: BASKET
@@ -54,6 +142,7 @@ class Basket {
   }
 
   void display() {
+    // You can replace this with an image for a more appealing basket.
     fill(160, 90, 0);
     rectMode(CENTER);
     rect(x, height - h, w, h);
@@ -62,6 +151,10 @@ class Basket {
   void move() {
     x += dir * 5;
     x = constrain(x, w / 2, width - w / 2);
+  }
+
+  void moveTo(float mx) {
+    x = constrain(mx, w / 2, width - w / 2);
   }
 }
 
@@ -98,7 +191,7 @@ class GoodEgg extends Egg {
   }
 }
 
-// SUBCLASS Bad Egg
+// SUBCLASS BadEgg
 class BadEgg extends Egg {
   void display () {
     fill(200, 50, 50);
