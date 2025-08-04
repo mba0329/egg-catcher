@@ -3,20 +3,31 @@ int numEggs = 10;
 Basket basket;
 boolean useMouseControl = false; // Toggle mouse/keyboard control
 int score = 0;
-int lives = 100;
+int lives = 3;
 boolean gameOver = false;
 
 PImage bgImg; // Background image
+PImage basketImg; // Basket image
+PImage goodEggImg; // Good egg image
+PImage badEggImg; // Bad egg image
+PImage goldenEggImg; // Golden egg image
 
 void setup() {
   size(400, 600);
-  bgImg = loadImage("background.jpg");
+  bgImg = loadImage("background-cartoon.jpg");
+  basketImg = loadImage("basket-c.png");
+  goodEggImg = loadImage("good-egg-c.png");
+  badEggImg = loadImage("bad-egg-c.png");
+  goldenEggImg = loadImage("golden-egg-c.png");
   basket = new Basket();
   eggs = new Egg[numEggs];
   for (int i = 0; i < numEggs; i++) {
-    if (random(1) < 0.3) {
+    float randVal = random(1);
+    if (randVal < 0.05) { // 5% chance for golden egg
+      eggs[i] = new GoldenEgg();
+    } else if (randVal < 0.3) { // 25% chance for bad egg (0.05 to 0.3)
       eggs[i] = new BadEgg();
-    } else {
+    } else { // 70% chance for good egg (0.3 to 1.0)
       eggs[i] = new GoodEgg();
     }
   }
@@ -31,6 +42,10 @@ void draw() {
 
   basket.display();
 
+  if (lives <= 0) {
+    gameOver = true;
+  }
+  
   if (!gameOver) {
     if (useMouseControl) {
       basket.moveTo(mouseX);
@@ -38,7 +53,8 @@ void draw() {
       basket.move();
     }
 
-    for (Egg egg : eggs) {
+    for (int i = 0; i < eggs.length; i++) {
+      Egg egg = eggs[i];
       egg.update();
       egg.display();
 
@@ -47,30 +63,45 @@ void draw() {
           score += 10;
         } else if (egg instanceof BadEgg) {
           lives--;
-          if (lives <= 0) {
-            gameOver = true;
-          }
+        } else if (egg instanceof GoldenEgg) {
+          lives++; // Add one life
         }
-        egg.reset();
+        // Generate new random egg type
+        float randVal = random(1);
+        if (randVal < 0.05) { // 5% chance for golden egg
+          eggs[i] = new GoldenEgg();
+        } else if (randVal < 0.3) { // 25% chance for bad egg (0.05 to 0.3)
+          eggs[i] = new BadEgg();
+        } else { // 70% chance for good egg (0.3 to 1.0)
+          eggs[i] = new GoodEgg();
+        }
       } else if (egg.y > height) {
         // Missed egg
         if (egg instanceof GoodEgg) {
-          lives--;
-          if (lives <= 0) {
-            gameOver = true;
-          }
+          score -= 10;
         }
-        egg.reset();
+        
+        // Generate new random egg type
+        float randVal = random(1);
+        if (randVal < 0.05) {
+          eggs[i] = new GoldenEgg();
+        } else if (randVal < 0.3) {
+          eggs[i] = new BadEgg();
+        } else {
+          eggs[i] = new GoodEgg();
+        }
       }
     }
   }
 
   // HUD
-  fill(255);
+  // fill with text color yellow
+  fill(255, 255, 0);
   textAlign(LEFT, TOP);
-  textSize(14);
+  textSize(18);
   text("Score: " + score, 10, 10);
   text("Lives: " + lives, 10, 30);
+  textSize(14);
   text("Controls: Arrow keys or press 'M' for mouse control\nClick or Spacebar to reset eggs", 10, 50);
 
   if (gameOver) {
@@ -118,83 +149,22 @@ void mouseClicked() {
 }
 
 void resetAllEggs() {
-  for (Egg egg : eggs) {
-    egg.reset();
+  for (int i = 0; i < eggs.length; i++) {
+    // Generate new random egg type
+    float randVal = random(1);
+    if (randVal < 0.05) {
+      eggs[i] = new GoldenEgg();
+    } else if (randVal < 0.3) {
+      eggs[i] = new BadEgg();
+    } else {
+      eggs[i] = new GoodEgg();
+    }
   }
 }
 
 void restartGame() {
   score = 0;
-  lives = 100;
+  lives = 3;
   gameOver = false;
   resetAllEggs();
-}
-
-// CLASS: BASKET
-class Basket {
-  float x;
-  float w = 80;
-  float h = 40;
-  int dir = 0;
-
-  Basket() {
-    x = width / 2;
-  }
-
-  void display() {
-    // You can replace this with an image for a more appealing basket.
-    fill(160, 90, 0);
-    rectMode(CENTER);
-    rect(x, height - h, w, h);
-  }
-
-  void move() {
-    x += dir * 5;
-    x = constrain(x, w / 2, width - w / 2);
-  }
-
-  void moveTo(float mx) {
-    x = constrain(mx, w / 2, width - w / 2);
-  }
-}
-
-// CLASS: EGG
-abstract class Egg {
-  float x, y;
-  float speed = 3;
-
-  Egg() {
-    reset();
-  }
-
-  void reset() {
-    x = random(20, width - 20);
-    y = random(-200, -50);
-  }
-
-  void update() {
-    y += speed;
-  }
-
-  abstract void display();
-
-  boolean isCaught(Basket b) {
-    return y > height - b.h && abs(x - b.x) < b.w / 2;
-  }
-}
-
-// SUBCLASS GoodEgg
-class GoodEgg extends Egg {
-  void display () {
-    fill(255, 255, 180);
-    ellipse(x, y, 30, 40);
-  }
-}
-
-// SUBCLASS BadEgg
-class BadEgg extends Egg {
-  void display () {
-    fill(200, 50, 50);
-    ellipse(x, y, 30, 40);
-  }
 }
